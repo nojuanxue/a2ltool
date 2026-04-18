@@ -12,6 +12,7 @@ import queue
 import shlex
 import subprocess
 import threading
+import json
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
@@ -25,6 +26,7 @@ class A2lToolGui(tk.Tk):
         self.log_queue: queue.Queue[str] = queue.Queue()
         self.proc: subprocess.Popen[str] | None = None
         self.status_var = tk.StringVar(value="状态：就绪")
+        self.config_path = os.path.join(os.getcwd(), "a2ltool_gui_defaults.json")
 
         self._build_vars()
         self._build_ui()
@@ -108,6 +110,7 @@ class A2lToolGui(tk.Tk):
         btns = ttk.Frame(root)
         btns.pack(fill=tk.X, pady=5)
         ttk.Button(btns, text="生成命令", command=self.update_preview).pack(side=tk.LEFT, padx=4)
+        ttk.Button(btns, text="保存为默认配置", command=self.save_as_default_config).pack(side=tk.LEFT, padx=4)
         ttk.Button(btns, text="导出 RSP", command=self.export_rsp).pack(side=tk.LEFT, padx=4)
         ttk.Button(btns, text="执行", command=self.run_command).pack(side=tk.LEFT, padx=4)
         ttk.Button(btns, text="停止", command=self.stop_command).pack(side=tk.LEFT, padx=4)
@@ -118,6 +121,7 @@ class A2lToolGui(tk.Tk):
         self.log_text = tk.Text(log_box, height=15)
         self.log_text.pack(fill=tk.BOTH, expand=True)
 
+        self.load_default_config()
         self.update_preview()
 
     def _build_debug_tab(self, tab: ttk.Frame) -> None:
@@ -347,6 +351,12 @@ class A2lToolGui(tk.Tk):
     @staticmethod
     def _listbox_items(listbox: tk.Listbox) -> list[str]:
         return [str(item).strip() for item in listbox.get(0, tk.END) if str(item).strip()]
+
+    @staticmethod
+    def _set_text_content(widget: tk.Text, lines: list[str]) -> None:
+        widget.delete("1.0", tk.END)
+        if lines:
+            widget.insert(tk.END, "\n".join(lines) + "\n")
 
     @staticmethod
     def _pairs_from_lines(lines: list[str], option_name: str) -> list[tuple[str, str]]:
@@ -670,6 +680,123 @@ class A2lToolGui(tk.Tk):
             return
         self.log_queue.put(f"\n>>> 已导出 RSP: {rsp_file}\n")
         self.update_preview()
+
+    def _collect_current_state(self) -> dict:
+        return {
+            "exe": self.exe_var.get(),
+            "input": self.input_var.get(),
+            "output": self.output_var.get(),
+            "create": bool(self.create_var.get()),
+            "elf": self.elf_var.get(),
+            "pdb": self.pdb_var.get(),
+            "strict": bool(self.strict_var.get()),
+            "verbose": int(self.verbose_var.get()),
+            "debug_print": bool(self.debug_print_var.get()),
+            "check": bool(self.check_var.get()),
+            "cleanup": bool(self.cleanup_var.get()),
+            "sort": bool(self.sort_var.get()),
+            "ifdata_cleanup": bool(self.ifdata_cleanup_var.get()),
+            "show_xcp": bool(self.show_xcp_var.get()),
+            "insert_a2ml": bool(self.insert_a2ml_var.get()),
+            "merge_includes": bool(self.merge_includes_var.get()),
+            "enable_structures": bool(self.enable_structures_var.get()),
+            "old_arrays": bool(self.old_arrays_var.get()),
+            "merge_pref": self.merge_pref_var.get(),
+            "a2lversion": self.a2lversion_var.get(),
+            "update_type": self.update_type_var.get(),
+            "update_mode": self.update_mode_var.get(),
+            "target_group": self.target_group_var.get(),
+            "extra_args": self.extra_args_var.get(),
+            "char_file": self.char_file_var.get(),
+            "meas_file": self.meas_file_var.get(),
+            "use_rsp": bool(self.use_rsp_var.get()),
+            "rsp_file": self.rsp_file_var.get(),
+            "merge_list": self._listbox_items(self.merge_list),
+            "merge_project_list": self._listbox_items(self.merge_project_list),
+            "characteristic_lines": self._split_lines(self.char_text),
+            "characteristic_regex_lines": self._split_lines(self.char_regex_text),
+            "characteristic_section_lines": self._split_lines(self.char_section_text),
+            "characteristic_range_lines": self._split_lines(self.char_range_text),
+            "measurement_lines": self._split_lines(self.meas_text),
+            "measurement_regex_lines": self._split_lines(self.meas_regex_text),
+            "measurement_section_lines": self._split_lines(self.meas_section_text),
+            "measurement_range_lines": self._split_lines(self.meas_range_text),
+            "remove_lines": self._split_lines(self.remove_text),
+            "remove_range_lines": self._split_lines(self.remove_range_text),
+            "from_source_lines": self._split_lines(self.from_source_text),
+        }
+
+    def _apply_state(self, state: dict) -> None:
+        self.exe_var.set(state.get("exe", self.exe_var.get()))
+        self.input_var.set(state.get("input", ""))
+        self.output_var.set(state.get("output", ""))
+        self.create_var.set(bool(state.get("create", False)))
+        self.elf_var.set(state.get("elf", ""))
+        self.pdb_var.set(state.get("pdb", ""))
+        self.strict_var.set(bool(state.get("strict", False)))
+        self.verbose_var.set(int(state.get("verbose", 0)))
+        self.debug_print_var.set(bool(state.get("debug_print", False)))
+        self.check_var.set(bool(state.get("check", False)))
+        self.cleanup_var.set(bool(state.get("cleanup", False)))
+        self.sort_var.set(bool(state.get("sort", False)))
+        self.ifdata_cleanup_var.set(bool(state.get("ifdata_cleanup", False)))
+        self.show_xcp_var.set(bool(state.get("show_xcp", False)))
+        self.insert_a2ml_var.set(bool(state.get("insert_a2ml", False)))
+        self.merge_includes_var.set(bool(state.get("merge_includes", False)))
+        self.enable_structures_var.set(bool(state.get("enable_structures", False)))
+        self.old_arrays_var.set(bool(state.get("old_arrays", False)))
+        self.merge_pref_var.set(state.get("merge_pref", "BOTH"))
+        self.a2lversion_var.set(state.get("a2lversion", ""))
+        self.update_type_var.set(state.get("update_type", ""))
+        self.update_mode_var.set(state.get("update_mode", ""))
+        self.target_group_var.set(state.get("target_group", ""))
+        self.extra_args_var.set(state.get("extra_args", ""))
+        self.char_file_var.set(state.get("char_file", ""))
+        self.meas_file_var.set(state.get("meas_file", ""))
+        self.use_rsp_var.set(bool(state.get("use_rsp", False)))
+        self.rsp_file_var.set(state.get("rsp_file", "a2ltool_args.rsp"))
+
+        self.merge_list.delete(0, tk.END)
+        for item in state.get("merge_list", []):
+            self.merge_list.insert(tk.END, item)
+
+        self.merge_project_list.delete(0, tk.END)
+        for item in state.get("merge_project_list", []):
+            self.merge_project_list.insert(tk.END, item)
+
+        self._set_text_content(self.char_text, state.get("characteristic_lines", []))
+        self._set_text_content(self.char_regex_text, state.get("characteristic_regex_lines", []))
+        self._set_text_content(self.char_section_text, state.get("characteristic_section_lines", []))
+        self._set_text_content(self.char_range_text, state.get("characteristic_range_lines", []))
+        self._set_text_content(self.meas_text, state.get("measurement_lines", []))
+        self._set_text_content(self.meas_regex_text, state.get("measurement_regex_lines", []))
+        self._set_text_content(self.meas_section_text, state.get("measurement_section_lines", []))
+        self._set_text_content(self.meas_range_text, state.get("measurement_range_lines", []))
+        self._set_text_content(self.remove_text, state.get("remove_lines", []))
+        self._set_text_content(self.remove_range_text, state.get("remove_range_lines", []))
+        self._set_text_content(self.from_source_text, state.get("from_source_lines", []))
+
+    def save_as_default_config(self) -> None:
+        try:
+            state = self._collect_current_state()
+            with open(self.config_path, "w", encoding="utf-8") as f:
+                json.dump(state, f, ensure_ascii=False, indent=2)
+        except Exception as exc:
+            messagebox.showerror("保存失败", f"默认配置保存失败: {exc}")
+            return
+        messagebox.showinfo("保存成功", f"默认配置已保存：\n{self.config_path}")
+
+    def load_default_config(self) -> None:
+        if not os.path.exists(self.config_path):
+            return
+        try:
+            with open(self.config_path, "r", encoding="utf-8") as f:
+                state = json.load(f)
+            if isinstance(state, dict):
+                self._apply_state(state)
+                self.log_queue.put(f"\n>>> 已加载默认配置: {self.config_path}\n")
+        except Exception as exc:
+            self.log_queue.put(f"\n>>> 默认配置加载失败: {exc}\n")
 
 
 def main() -> None:
