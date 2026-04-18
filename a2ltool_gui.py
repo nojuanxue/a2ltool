@@ -24,6 +24,7 @@ class A2lToolGui(tk.Tk):
 
         self.log_queue: queue.Queue[str] = queue.Queue()
         self.proc: subprocess.Popen[str] | None = None
+        self.status_var = tk.StringVar(value="状态：就绪")
 
         self._build_vars()
         self._build_ui()
@@ -110,6 +111,7 @@ class A2lToolGui(tk.Tk):
         ttk.Button(btns, text="导出 RSP", command=self.export_rsp).pack(side=tk.LEFT, padx=4)
         ttk.Button(btns, text="执行", command=self.run_command).pack(side=tk.LEFT, padx=4)
         ttk.Button(btns, text="停止", command=self.stop_command).pack(side=tk.LEFT, padx=4)
+        ttk.Label(btns, textvariable=self.status_var).pack(side=tk.LEFT, padx=16)
 
         log_box = ttk.LabelFrame(root, text="日志")
         log_box.pack(fill=tk.BOTH, expand=True, pady=5)
@@ -540,6 +542,7 @@ class A2lToolGui(tk.Tk):
                 return
             cmd = [cmd[0], f"@{rsp_file}"]
 
+        self._set_status("状态：运行中...")
         self.log_queue.put(f"\n>>> 执行: {' '.join(shlex.quote(x) for x in cmd)}\n")
 
         def worker() -> None:
@@ -562,15 +565,28 @@ class A2lToolGui(tk.Tk):
             rc = self.proc.wait()
             self.log_queue.put(f"\n<<< 结束，退出码: {rc}\n")
             self.proc = None
+            self.after(0, lambda: self._on_process_finished(rc))
 
         threading.Thread(target=worker, daemon=True).start()
 
     def stop_command(self) -> None:
         if self.proc and self.proc.poll() is None:
             self.proc.terminate()
+            self._set_status("状态：停止中...")
             self.log_queue.put("\n>>> 已发送终止信号\n")
         else:
             self.log_queue.put("\n>>> 当前无运行中的进程\n")
+
+    def _set_status(self, text: str) -> None:
+        self.status_var.set(text)
+
+    def _on_process_finished(self, rc: int) -> None:
+        if rc == 0:
+            self._set_status("状态：运行成功")
+            messagebox.showinfo("运行完成", "运行成功")
+        else:
+            self._set_status(f"状态：运行失败（退出码 {rc}）")
+            messagebox.showwarning("运行结束", f"运行结束，退出码: {rc}")
 
     def export_rsp(self) -> None:
         try:

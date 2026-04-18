@@ -37,6 +37,7 @@ python a2ltool_gui.py
 
 In the GUI, choose the `a2ltool.exe` path (on Windows), fill the desired options, review the generated command preview, then click execute.
 The GUI also supports importing large CHARACTERISTIC/MEASUREMENT lists from external text files and exporting/using `@rsp` response files for command execution.
+It displays runtime status (ready/running/success/fail) and shows a completion popup after execution.
 
 Detailed (Chinese, Obsidian-friendly) command documentation is available at:
 
