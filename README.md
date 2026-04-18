@@ -37,6 +37,10 @@ python a2ltool_gui.py
 
 In the GUI, choose the `a2ltool.exe` path (on Windows), fill the desired options, review the generated command preview, then click execute.
 
+Detailed (Chinese, Obsidian-friendly) command documentation is available at:
+
+- `docs/obsidian/a2ltool-完整指令手册.md`
+
 ## Examples
 
 The following examples show how to use a2ltool for common use cases:
