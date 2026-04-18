@@ -25,6 +25,18 @@ For any other platform you can compile a2ltool using `cargo build --release`.
 
 Refer to [the manual](https://danielt.github.io/a2ltool/) for a detailed description of the features and options of a2ltool.
 
+## GUI wrapper (all CLI options)
+
+This repository includes a Tkinter-based GUI wrapper script `a2ltool_gui.py` that can generate and execute `a2ltool` commands for all documented options.
+
+Run it with:
+
+```bash
+python a2ltool_gui.py
+```
+
+In the GUI, choose the `a2ltool.exe` path (on Windows), fill the desired options, review the generated command preview, then click execute.
+
 ## Examples
 
 The following examples show how to use a2ltool for common use cases:
