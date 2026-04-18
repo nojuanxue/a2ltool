@@ -106,12 +106,18 @@ class A2lToolGui(tk.Tk):
         self._build_insert_remove_tab(tab_insert_remove)
         self._build_other_tab(tab_other)
 
-        preview_box = ttk.LabelFrame(root, text="命令预览")
-        preview_box.pack(fill=tk.BOTH, expand=False, pady=5)
+        vertical_pane = ttk.Panedwindow(root, orient=tk.VERTICAL)
+        vertical_pane.pack(fill=tk.BOTH, expand=True, pady=5)
+
+        preview_box = ttk.LabelFrame(vertical_pane, text="命令预览（可拖动分隔条上下调整高度）")
         self.preview_text = tk.Text(preview_box, height=5)
         self.preview_text.pack(fill=tk.BOTH, expand=True)
 
-        btns = ttk.Frame(root)
+        lower_area = ttk.Frame(vertical_pane)
+        vertical_pane.add(preview_box, weight=1)
+        vertical_pane.add(lower_area, weight=5)
+
+        btns = ttk.Frame(lower_area)
         btns.pack(fill=tk.X, pady=5)
         ttk.Button(btns, text="生成命令", command=self.update_preview).pack(side=tk.LEFT, padx=4)
         ttk.Button(btns, text="保存为默认配置", command=self.save_as_default_config).pack(side=tk.LEFT, padx=4)
@@ -120,7 +126,7 @@ class A2lToolGui(tk.Tk):
         ttk.Button(btns, text="停止", command=self.stop_command).pack(side=tk.LEFT, padx=4)
         ttk.Label(btns, textvariable=self.status_var).pack(side=tk.LEFT, padx=16)
 
-        log_box = ttk.LabelFrame(root, text="日志")
+        log_box = ttk.LabelFrame(lower_area, text="日志")
         log_box.pack(fill=tk.BOTH, expand=True, pady=5)
         self.log_text = tk.Text(log_box, height=15)
         self.log_text.pack(fill=tk.BOTH, expand=True)

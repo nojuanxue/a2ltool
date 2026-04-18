@@ -41,6 +41,7 @@ It displays runtime status (ready/running/success/fail) and shows a completion p
 For A2L merge inputs, the GUI supports file-browser based loading (add/remove/clear) instead of manual typing.
 You can also persist the current GUI setup as default configuration and auto-load it on next startup.
 The GUI applies consistent UI font styling and responsive layout behavior so content scales better with window resizing.
+The command preview area is now in a vertical split-pane; you can drag the divider up/down to resize preview vs log space.
 
 Detailed (Chinese, Obsidian-friendly) command documentation is available at:
 
