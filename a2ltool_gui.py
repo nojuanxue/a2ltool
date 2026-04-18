@@ -106,16 +106,25 @@ class A2lToolGui(tk.Tk):
         self._build_insert_remove_tab(tab_insert_remove)
         self._build_other_tab(tab_other)
 
-        vertical_pane = ttk.Panedwindow(root, orient=tk.VERTICAL)
-        vertical_pane.pack(fill=tk.BOTH, expand=True, pady=5)
+        self.vertical_pane = tk.PanedWindow(
+            root,
+            orient=tk.VERTICAL,
+            sashwidth=10,
+            sashrelief=tk.RAISED,
+            showhandle=True,
+            opaqueresize=True,
+            bd=0,
+            relief=tk.FLAT,
+        )
+        self.vertical_pane.pack(fill=tk.BOTH, expand=True, pady=5)
 
-        preview_box = ttk.LabelFrame(vertical_pane, text="命令预览（可拖动分隔条上下调整高度）")
+        preview_box = ttk.LabelFrame(self.vertical_pane, text="命令预览（可拖动分隔条上下调整高度）")
         self.preview_text = tk.Text(preview_box, height=5)
         self.preview_text.pack(fill=tk.BOTH, expand=True)
 
-        lower_area = ttk.Frame(vertical_pane)
-        vertical_pane.add(preview_box, weight=1)
-        vertical_pane.add(lower_area, weight=5)
+        lower_area = ttk.Frame(self.vertical_pane)
+        self.vertical_pane.add(preview_box, minsize=45, stretch="never")
+        self.vertical_pane.add(lower_area, minsize=120, stretch="always")
 
         btns = ttk.Frame(lower_area)
         btns.pack(fill=tk.X, pady=5)
@@ -133,6 +142,13 @@ class A2lToolGui(tk.Tk):
 
         self.load_default_config()
         self.update_preview()
+        self.after(120, self._set_initial_sash_position)
+
+    def _set_initial_sash_position(self) -> None:
+        try:
+            self.vertical_pane.sash_place(0, 0, 80)
+        except Exception:
+            pass
 
     def _configure_ui_style(self) -> None:
         default_font = tkfont.nametofont("TkDefaultFont")
