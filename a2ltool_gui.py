@@ -14,6 +14,7 @@ import subprocess
 import threading
 import json
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import filedialog, messagebox, ttk
 
 
@@ -22,6 +23,8 @@ class A2lToolGui(tk.Tk):
         super().__init__()
         self.title("a2ltool GUI")
         self.geometry("1300x900")
+        self.minsize(980, 700)
+        self.tk.call("tk", "scaling", 1.0)
 
         self.log_queue: queue.Queue[str] = queue.Queue()
         self.proc: subprocess.Popen[str] | None = None
@@ -29,6 +32,7 @@ class A2lToolGui(tk.Tk):
         self.config_path = os.path.join(os.getcwd(), "a2ltool_gui_defaults.json")
 
         self._build_vars()
+        self._configure_ui_style()
         self._build_ui()
         self._poll_log_queue()
 
@@ -124,6 +128,32 @@ class A2lToolGui(tk.Tk):
         self.load_default_config()
         self.update_preview()
 
+    def _configure_ui_style(self) -> None:
+        default_font = tkfont.nametofont("TkDefaultFont")
+        text_font = tkfont.nametofont("TkTextFont")
+        heading_font = tkfont.nametofont("TkHeadingFont")
+
+        preferred = ["Microsoft YaHei UI", "Segoe UI", "Noto Sans CJK SC", default_font.cget("family")]
+        family = preferred[-1]
+        try:
+            available = set(tkfont.families())
+            for name in preferred:
+                if name in available:
+                    family = name
+                    break
+        except Exception:
+            pass
+
+        default_font.configure(family=family, size=11)
+        text_font.configure(family=family, size=11)
+        heading_font.configure(family=family, size=11, weight="bold")
+
+        style = ttk.Style(self)
+        style.configure(".", font=default_font)
+        style.configure("TButton", padding=(10, 4))
+        style.configure("TLabel", padding=(1, 1))
+        style.configure("TLabelframe.Label", font=heading_font)
+
     def _build_debug_tab(self, tab: ttk.Frame) -> None:
         self._add_file_row(tab, 0, "ELF 文件（--elffile）", self.elf_var, self._choose_elf)
         self._add_file_row(tab, 1, "PDB 文件（--pdbfile）", self.pdb_var, self._choose_pdb)
@@ -203,35 +233,35 @@ class A2lToolGui(tk.Tk):
 
         ttk.Label(left, text="--characteristic（每行一个VAR）").pack(anchor=tk.W)
         self.char_text = tk.Text(left, height=6)
-        self.char_text.pack(fill=tk.BOTH, expand=False)
+        self.char_text.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(left, text="--characteristic-regex（每行一个REGEX）").pack(anchor=tk.W)
         self.char_regex_text = tk.Text(left, height=4)
-        self.char_regex_text.pack(fill=tk.BOTH, expand=False)
+        self.char_regex_text.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(left, text="--characteristic-section（每行一个SECTION）").pack(anchor=tk.W)
         self.char_section_text = tk.Text(left, height=4)
-        self.char_section_text.pack(fill=tk.BOTH, expand=False)
+        self.char_section_text.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(left, text="--characteristic-range（每行: 起始 结束）").pack(anchor=tk.W)
         self.char_range_text = tk.Text(left, height=4)
-        self.char_range_text.pack(fill=tk.BOTH, expand=False)
+        self.char_range_text.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(right, text="--measurement（每行一个VAR）").pack(anchor=tk.W)
         self.meas_text = tk.Text(right, height=6)
-        self.meas_text.pack(fill=tk.BOTH, expand=False)
+        self.meas_text.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(right, text="--measurement-regex（每行一个REGEX）").pack(anchor=tk.W)
         self.meas_regex_text = tk.Text(right, height=4)
-        self.meas_regex_text.pack(fill=tk.BOTH, expand=False)
+        self.meas_regex_text.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(right, text="--measurement-section（每行一个SECTION）").pack(anchor=tk.W)
         self.meas_section_text = tk.Text(right, height=4)
-        self.meas_section_text.pack(fill=tk.BOTH, expand=False)
+        self.meas_section_text.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(right, text="--measurement-range（每行: 起始 结束）").pack(anchor=tk.W)
         self.meas_range_text = tk.Text(right, height=4)
-        self.meas_range_text.pack(fill=tk.BOTH, expand=False)
+        self.meas_range_text.pack(fill=tk.BOTH, expand=True)
 
         bottom = ttk.LabelFrame(tab, text="删除")
         bottom.pack(fill=tk.BOTH, expand=False, pady=8)
@@ -243,6 +273,8 @@ class A2lToolGui(tk.Tk):
         ttk.Label(bottom, text="--remove-range（每行: 起始 结束）").grid(row=0, column=1, sticky=tk.W)
         self.remove_range_text = tk.Text(bottom, height=4, width=45)
         self.remove_range_text.grid(row=1, column=1, sticky=tk.NSEW, padx=4, pady=4)
+        bottom.grid_columnconfigure(0, weight=1)
+        bottom.grid_columnconfigure(1, weight=1)
 
         row = ttk.Frame(tab)
         row.pack(fill=tk.X, pady=5)
@@ -277,7 +309,7 @@ class A2lToolGui(tk.Tk):
 
         ttk.Label(tab, text="--from-source（每行一个文件或通配符）").pack(anchor=tk.W, pady=(8, 0))
         self.from_source_text = tk.Text(tab, height=5)
-        self.from_source_text.pack(fill=tk.BOTH, expand=False)
+        self.from_source_text.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(tab, text="额外参数（高级，按命令行语法填写）").pack(anchor=tk.W, pady=(8, 0))
         ttk.Entry(tab, textvariable=self.extra_args_var).pack(fill=tk.X)
@@ -294,7 +326,7 @@ class A2lToolGui(tk.Tk):
 
     def _add_file_row(self, parent: tk.Widget, row: int, label: str, var: tk.StringVar, cb, save: bool = False) -> None:
         ttk.Label(parent, text=label).grid(row=row, column=0, sticky=tk.W, padx=5, pady=5)
-        ttk.Entry(parent, textvariable=var, width=100).grid(row=row, column=1, sticky=tk.EW, padx=5, pady=5)
+        ttk.Entry(parent, textvariable=var).grid(row=row, column=1, sticky=tk.EW, padx=5, pady=5)
         ttk.Button(parent, text="浏览", command=cb).grid(row=row, column=2, padx=5, pady=5)
         parent.grid_columnconfigure(1, weight=1)
 

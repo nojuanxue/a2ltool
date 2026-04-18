@@ -40,6 +40,7 @@ The GUI also supports importing large CHARACTERISTIC/MEASUREMENT lists from exte
 It displays runtime status (ready/running/success/fail) and shows a completion popup after execution.
 For A2L merge inputs, the GUI supports file-browser based loading (add/remove/clear) instead of manual typing.
 You can also persist the current GUI setup as default configuration and auto-load it on next startup.
+The GUI applies consistent UI font styling and responsive layout behavior so content scales better with window resizing.
 
 Detailed (Chinese, Obsidian-friendly) command documentation is available at:
 
