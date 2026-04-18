@@ -74,8 +74,20 @@ class A2lToolGui(tk.Tk):
         self.rsp_file_var = tk.StringVar(value="a2ltool_args.rsp")
 
     def _build_ui(self) -> None:
-        root = ttk.Frame(self, padding=10)
-        root.pack(fill=tk.BOTH, expand=True)
+        outer = ttk.Frame(self)
+        outer.pack(fill=tk.BOTH, expand=True)
+
+        self.main_canvas = tk.Canvas(outer, highlightthickness=0)
+        self.main_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.main_scrollbar = ttk.Scrollbar(outer, orient=tk.VERTICAL, command=self.main_canvas.yview)
+        self.main_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.main_canvas.configure(yscrollcommand=self.main_scrollbar.set)
+
+        root = ttk.Frame(self.main_canvas, padding=10)
+        self._canvas_window_id = self.main_canvas.create_window((0, 0), window=root, anchor="nw")
+        self.main_canvas.bind("<Configure>", self._on_canvas_configure)
+        root.bind("<Configure>", self._on_frame_configure)
+        self.main_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
 
         top = ttk.LabelFrame(root, text="基础")
         top.pack(fill=tk.X, pady=5)
@@ -149,6 +161,16 @@ class A2lToolGui(tk.Tk):
             self.vertical_pane.sash_place(0, 0, 80)
         except Exception:
             pass
+
+    def _on_canvas_configure(self, event: tk.Event) -> None:
+        self.main_canvas.itemconfigure(self._canvas_window_id, width=event.width)
+
+    def _on_frame_configure(self, _event: tk.Event) -> None:
+        self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
+
+    def _on_mousewheel(self, event: tk.Event) -> None:
+        if self.main_canvas.winfo_exists():
+            self.main_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _configure_ui_style(self) -> None:
         default_font = tkfont.nametofont("TkDefaultFont")

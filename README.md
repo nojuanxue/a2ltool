@@ -43,6 +43,7 @@ You can also persist the current GUI setup as default configuration and auto-loa
 The GUI applies consistent UI font styling and responsive layout behavior so content scales better with window resizing.
 The command preview area is now in a vertical split-pane; you can drag the divider up/down to resize preview vs log space.
 The splitter now uses a visible drag handle with relaxed min-size limits so the preview area can be pulled further upward.
+The main GUI now includes a right-side vertical scrollbar for full-page up/down navigation.
 
 Detailed (Chinese, Obsidian-friendly) command documentation is available at:
 
