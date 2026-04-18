@@ -132,13 +132,23 @@ class A2lToolGui(tk.Tk):
         left.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=4)
         right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=4)
 
-        ttk.Label(left, text="--merge（每行一个A2L）").pack(anchor=tk.W)
-        self.merge_text = tk.Text(left, height=8)
-        self.merge_text.pack(fill=tk.BOTH, expand=True)
+        ttk.Label(left, text="--merge（请用浏览按钮添加）").pack(anchor=tk.W)
+        self.merge_list = tk.Listbox(left, height=7)
+        self.merge_list.pack(fill=tk.BOTH, expand=True)
+        merge_btn_row = ttk.Frame(left)
+        merge_btn_row.pack(fill=tk.X, pady=3)
+        ttk.Button(merge_btn_row, text="添加 A2L", command=self._add_merge_file).pack(side=tk.LEFT, padx=2)
+        ttk.Button(merge_btn_row, text="移除选中", command=self._remove_selected_merge).pack(side=tk.LEFT, padx=2)
+        ttk.Button(merge_btn_row, text="清空", command=self._clear_merge).pack(side=tk.LEFT, padx=2)
 
-        ttk.Label(left, text="--merge-project（每行一个A2L）").pack(anchor=tk.W, pady=(8, 0))
-        self.merge_project_text = tk.Text(left, height=8)
-        self.merge_project_text.pack(fill=tk.BOTH, expand=True)
+        ttk.Label(left, text="--merge-project（请用浏览按钮添加）").pack(anchor=tk.W, pady=(8, 0))
+        self.merge_project_list = tk.Listbox(left, height=7)
+        self.merge_project_list.pack(fill=tk.BOTH, expand=True)
+        merge_project_btn_row = ttk.Frame(left)
+        merge_project_btn_row.pack(fill=tk.X, pady=3)
+        ttk.Button(merge_project_btn_row, text="添加 Project A2L", command=self._add_merge_project_file).pack(side=tk.LEFT, padx=2)
+        ttk.Button(merge_project_btn_row, text="移除选中", command=self._remove_selected_merge_project).pack(side=tk.LEFT, padx=2)
+        ttk.Button(merge_project_btn_row, text="清空", command=self._clear_merge_project).pack(side=tk.LEFT, padx=2)
 
         pref_row = ttk.Frame(left)
         pref_row.pack(fill=tk.X, pady=5)
@@ -335,6 +345,10 @@ class A2lToolGui(tk.Tk):
         return [x.strip() for x in text.get("1.0", tk.END).splitlines() if x.strip()]
 
     @staticmethod
+    def _listbox_items(listbox: tk.Listbox) -> list[str]:
+        return [str(item).strip() for item in listbox.get(0, tk.END) if str(item).strip()]
+
+    @staticmethod
     def _pairs_from_lines(lines: list[str], option_name: str) -> list[tuple[str, str]]:
         out: list[tuple[str, str]] = []
         for line in lines:
@@ -389,6 +403,48 @@ class A2lToolGui(tk.Tk):
                 f.write(shlex.quote(arg))
                 f.write("\n")
 
+    @staticmethod
+    def _remove_selected(listbox: tk.Listbox) -> None:
+        selected = listbox.curselection()
+        for idx in reversed(selected):
+            listbox.delete(idx)
+
+    def _add_merge_file(self) -> None:
+        files = filedialog.askopenfilenames(title="选择用于 --merge 的 A2L 文件", filetypes=[("A2L", "*.a2l"), ("All", "*.*")])
+        if not files:
+            return
+        existing = set(self._listbox_items(self.merge_list))
+        for file in files:
+            if file not in existing:
+                self.merge_list.insert(tk.END, file)
+        self.update_preview()
+
+    def _add_merge_project_file(self) -> None:
+        files = filedialog.askopenfilenames(title="选择用于 --merge-project 的 A2L 文件", filetypes=[("A2L", "*.a2l"), ("All", "*.*")])
+        if not files:
+            return
+        existing = set(self._listbox_items(self.merge_project_list))
+        for file in files:
+            if file not in existing:
+                self.merge_project_list.insert(tk.END, file)
+        self.update_preview()
+
+    def _remove_selected_merge(self) -> None:
+        self._remove_selected(self.merge_list)
+        self.update_preview()
+
+    def _remove_selected_merge_project(self) -> None:
+        self._remove_selected(self.merge_project_list)
+        self.update_preview()
+
+    def _clear_merge(self) -> None:
+        self.merge_list.delete(0, tk.END)
+        self.update_preview()
+
+    def _clear_merge_project(self) -> None:
+        self.merge_project_list.delete(0, tk.END)
+        self.update_preview()
+
     def build_command(self) -> list[str]:
         exe = self.exe_var.get().strip() or "a2ltool.exe"
         args: list[str] = [exe]
@@ -414,8 +470,8 @@ class A2lToolGui(tk.Tk):
             args.extend(["--pdbfile", pdb])
 
         # merge/update
-        merge_items = self._split_lines(self.merge_text)
-        merge_project_items = self._split_lines(self.merge_project_text)
+        merge_items = self._listbox_items(self.merge_list)
+        merge_project_items = self._listbox_items(self.merge_project_list)
         for item in merge_items:
             args.extend(["--merge", item])
         if merge_items:
