@@ -480,13 +480,100 @@ class A2lToolGui(tk.Tk):
 
     @staticmethod
     def _write_rsp_file(path: str, args_without_exe: list[str]) -> None:
+        def _to_rsp_lines(raw_args: list[str]) -> list[str]:
+            one_arg_options = {
+                "--elffile",
+                "--pdbfile",
+                "--merge",
+                "--merge-preference",
+                "--merge-project",
+                "--update",
+                "--update-mode",
+                "--a2lversion",
+                "--characteristic",
+                "--characteristic-regex",
+                "--characteristic-section",
+                "--measurement",
+                "--measurement-regex",
+                "--measurement-section",
+                "--target-group",
+                "--remove",
+                "--from-source",
+            }
+            two_arg_options = {"--characteristic-range", "--measurement-range", "--remove-range"}
+            flag_options = {
+                "--strict",
+                "--check",
+                "--cleanup",
+                "--sort",
+                "--ifdata-cleanup",
+                "--show-xcp",
+                "--insert-a2ml",
+                "--enable-structures",
+                "--old-arrays",
+                "--debug-print",
+                "--merge-includes",
+                "-v",
+            }
+
+            lines: list[str] = []
+            i = 0
+            skipped_input = False
+            while i < len(raw_args):
+                token = raw_args[i]
+
+                # RSP 文件中只保留“中间命令”，移除 create/input/output。
+                if token == "--create":
+                    i += 1
+                    continue
+                if token == "--output":
+                    i += 2
+                    continue
+                if not skipped_input and not token.startswith("-"):
+                    skipped_input = True
+                    i += 1
+                    continue
+
+                if token in two_arg_options:
+                    if i + 2 >= len(raw_args):
+                        raise ValueError(f"RSP 导出失败：参数不完整 {token}")
+                    lines.append(
+                        " ".join(
+                            shlex.quote(x) for x in (token, raw_args[i + 1], raw_args[i + 2])
+                        )
+                    )
+                    i += 3
+                    continue
+
+                if token in one_arg_options:
+                    if i + 1 >= len(raw_args):
+                        raise ValueError(f"RSP 导出失败：参数不完整 {token}")
+                    lines.append(" ".join(shlex.quote(x) for x in (token, raw_args[i + 1])))
+                    i += 2
+                    continue
+
+                if token in flag_options:
+                    lines.append(token)
+                    i += 1
+                    continue
+
+                # 未知参数尽力按“当前 token + 下一 token（若存在且不是新选项）”写入一行。
+                if i + 1 < len(raw_args) and not raw_args[i + 1].startswith("-"):
+                    lines.append(" ".join(shlex.quote(x) for x in (token, raw_args[i + 1])))
+                    i += 2
+                else:
+                    lines.append(shlex.quote(token))
+                    i += 1
+            return lines
+
         path_obj = os.path.abspath(path)
         parent = os.path.dirname(path_obj)
         if parent:
             os.makedirs(parent, exist_ok=True)
+        rsp_lines = _to_rsp_lines(args_without_exe)
         with open(path_obj, "w", encoding="utf-8") as f:
-            for arg in args_without_exe:
-                f.write(shlex.quote(arg))
+            for line in rsp_lines:
+                f.write(line)
                 f.write("\n")
 
     @staticmethod
